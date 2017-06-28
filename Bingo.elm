@@ -1,6 +1,7 @@
 module Bingo exposing (..)
 
-import Html
+import Html exposing (..)
+import Html.Attributes exposing (..)
 
 
 playerInfo name gameNumber =
@@ -10,8 +11,8 @@ playerInfo name gameNumber =
 playerInfoText name gameNumber =
     playerInfo name gameNumber
         |> String.toUpper
-        |> Html.text
+        |> text
 
 
 main =
-    playerInfoText "Mike" 3
+    h2 [ id "info", class "classy" ] [ playerInfoText "Mike" 3 ]
