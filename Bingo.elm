@@ -8,28 +8,11 @@ playerInfo name gameNumber =
     name ++ " - Game #" ++ (toString gameNumber)
 
 
-viewPlayer name gameNumber =
-    let
-        playerInfoText =
-            playerInfo name gameNumber
-                |> String.toUpper
-                |> text
-    in
-        h2 [ id "info", class "classy" ] [ playerInfoText ]
-
-
-viewHeader title =
-    header [] [ h1 [] [ text title ] ]
-
-
-viewFooter =
-    footer []
-        [ a [ href "http://elm-lang.org" ] [ text "Powered by Elm" ] ]
-
-
-view =
-    div [ class "content" ] [ viewHeader "BUZZWORD BINGO", viewPlayer "Nicole" 4, viewFooter ]
+playerInfoText name gameNumber =
+    playerInfo name gameNumber
+        |> String.toUpper
+        |> text
 
 
 main =
-    viewPlayer "Nicole" 4
+    h2 [ id "info", class "classy" ] [ playerInfoText "Mike" 3 ]
