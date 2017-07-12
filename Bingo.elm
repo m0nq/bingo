@@ -4,6 +4,26 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 
 
+-- MODEL
+
+
+init =
+    { name = "Monk"
+    , gameNumber = 1
+    , entries = initialEntries
+    }
+
+
+initialEntries =
+    [ { id = 1, phrase = "Future-Proof", points = 100, marked = False }
+    , { id = 2, phrase = "Doing Agile", points = 200, marked = False }
+    ]
+
+
+
+-- VIEW
+
+
 playerInfo : String -> Int -> String
 playerInfo name gameNumber =
     name ++ " - Game #" ++ (toString gameNumber)
@@ -34,15 +54,15 @@ viewFooter =
         ]
 
 
-view : Html msg
-view =
+view model =
     div [ class "content" ]
         [ viewHeader "BUZZWORD BINGO"
-        , viewPlayer "Nicole" 4
+        , viewPlayer model.name model.gameNumber
+        , div [ class "debug" ] [ text (toString model) ]
         , viewFooter
         ]
 
 
 main : Html msg
 main =
-    view
+    view init
