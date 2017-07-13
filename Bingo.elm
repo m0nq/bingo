@@ -22,8 +22,8 @@ type alias Entry =
     }
 
 
-init : Model
-init =
+initialModel : Model
+initialModel =
     { name = "Monk"
     , gameNumber = 1
     , entries = initialEntries
@@ -103,4 +103,4 @@ view model =
 
 main : Html msg
 main =
-    view init
+    view initialModel
