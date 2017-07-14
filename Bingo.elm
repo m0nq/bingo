@@ -46,7 +46,7 @@ initialEntries =
 
 type Msg
     = NewGame
-    | Mark
+    | Mark Int
     | ShareScore
 
 
@@ -54,10 +54,20 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         NewGame ->
-            { model | gameNumber = model.gameNumber + 1 }
+            { model
+                | gameNumber = model.gameNumber + 1
+                , entries = initialEntries
+            }
 
-        Mark ->
-            { model | entries = List.filter (\entry -> not entry.marked) model.entries }
+        Mark id ->
+            let
+                markEntry e =
+                    if e.id == id then
+                        { e | marked = not e.marked }
+                    else
+                        e
+            in
+                { model | entries = List.map markEntry model.entries }
 
         ShareScore ->
             model
@@ -97,15 +107,15 @@ viewFooter =
         ]
 
 
-viewEntryItem : Entry -> Html msg
+viewEntryItem : Entry -> Html Msg
 viewEntryItem entry =
-    li []
+    li [ classList [ ( "marked", entry.marked ) ], onClick (Mark entry.id) ]
         [ span [ class "phrase" ] [ text entry.phrase ]
         , span [ class "points" ] [ text (toString entry.points) ]
         ]
 
 
-viewEntryList : List Entry -> Html msg
+viewEntryList : List Entry -> Html Msg
 viewEntryList entries =
     let
         listOfEntries =
