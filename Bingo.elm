@@ -2,6 +2,7 @@ module Bingo exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onCheck, onClick)
 
 
 -- MODEL
@@ -37,6 +38,29 @@ initialEntries =
     , Entry 3 "In The Cloud" 300 False
     , Entry 4 "Rock-Star Ninja" 400 False
     ]
+
+
+
+-- UPDATE
+
+
+type Msg
+    = NewGame
+    | Mark
+    | ShareScore
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        NewGame ->
+            { model | gameNumber = model.gameNumber + 1 }
+
+        Mark ->
+            { model | entries = List.filter (\entry -> not entry.marked) model.entries }
+
+        ShareScore ->
+            model
 
 
 
@@ -90,17 +114,23 @@ viewEntryList entries =
         ul [] listOfEntries
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
     div [ class "content" ]
         [ viewHeader "BUZZWORD BINGO"
         , viewPlayer model.name model.gameNumber
         , viewEntryList model.entries
+        , div [ class "button-group" ]
+            [ button [ onClick NewGame ] [ text "New Game" ] ]
         , div [ class "debug" ] [ text (toString model) ]
         , viewFooter
         ]
 
 
-main : Html msg
+main : Program Never Model Msg
 main =
-    view initialModel
+    Html.beginnerProgram
+        { model = initialModel
+        , view = view
+        , update = update
+        }
