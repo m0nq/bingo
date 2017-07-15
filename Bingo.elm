@@ -3,6 +3,7 @@ module Bingo exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck, onClick)
+import Random
 
 
 -- MODEL
@@ -47,17 +48,18 @@ initialEntries =
 type Msg
     = NewGame
     | Mark Int
-    | ShareScore
+    | NewRandom Int
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewGame ->
-            { model
-                | gameNumber = model.gameNumber + 1
-                , entries = initialEntries
-            }
+            ( { model
+                | entries = initialEntries
+              }
+            , generateRandomNumber
+            )
 
         Mark id ->
             let
@@ -67,10 +69,19 @@ update msg model =
                     else
                         e
             in
-                { model | entries = List.map markEntry model.entries }
+                ( { model | entries = List.map markEntry model.entries }, Cmd.none )
 
-        ShareScore ->
-            model
+        NewRandom randomNumber ->
+            ( { model | gameNumber = randomNumber }, Cmd.none )
+
+
+
+-- COMMANDS
+
+
+generateRandomNumber : Cmd Msg
+generateRandomNumber =
+    Random.generate NewRandom (Random.int 1 100)
 
 
 
@@ -156,8 +167,9 @@ view model =
 
 main : Program Never Model Msg
 main =
-    Html.beginnerProgram
-        { model = initialModel
+    Html.program
+        { init = ( initialModel, generateRandomNumber )
         , view = view
         , update = update
+        , subscriptions = (\_ -> Sub.none)
         }
