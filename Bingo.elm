@@ -3,6 +3,7 @@ module Bingo exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck, onClick)
+import Http
 import Random
 
 
@@ -28,17 +29,8 @@ initialModel : Model
 initialModel =
     { name = "Monk"
     , gameNumber = 1
-    , entries = initialEntries
+    , entries = []
     }
-
-
-initialEntries : List Entry
-initialEntries =
-    [ Entry 1 "Future-Proof" 100 False
-    , Entry 2 "Doing Agile" 200 False
-    , Entry 3 "In The Cloud" 300 False
-    , Entry 4 "Rock-Star Ninja" 400 False
-    ]
 
 
 
@@ -49,17 +41,14 @@ type Msg
     = NewGame
     | Mark Int
     | NewRandom Int
+    | NewEntries (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewGame ->
-            ( { model
-                | entries = initialEntries
-              }
-            , generateRandomNumber
-            )
+            ( { model | gameNumber = model.gameNumber + 1 }, getEntries )
 
         Mark id ->
             let
@@ -69,10 +58,26 @@ update msg model =
                     else
                         e
             in
-                ( { model | entries = List.map markEntry model.entries }, Cmd.none )
+                { model | entries = List.map markEntry model.entries } ! []
 
         NewRandom randomNumber ->
-            ( { model | gameNumber = randomNumber }, Cmd.none )
+            { model | gameNumber = randomNumber } ! []
+
+        NewEntries result ->
+            case result of
+                Ok jsonString ->
+                    let
+                        _ =
+                            Debug.log "It worked!" jsonString
+                    in
+                        ( model, Cmd.none )
+
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "Oops... I made a doody... :D " error
+                    in
+                        ( model, Cmd.none )
 
 
 
@@ -84,6 +89,17 @@ generateRandomNumber =
     Random.generate NewRandom (Random.int 1 100)
 
 
+getEntries : Cmd Msg
+getEntries =
+    let
+        entriesUrl =
+            "http://localhost:3000/random-entries"
+    in
+        entriesUrl
+            |> Http.getString
+            |> Http.send NewEntries
+
+
 
 -- VIEW
 
@@ -93,7 +109,7 @@ playerInfo name gameNumber =
     name ++ " - Game #" ++ (toString gameNumber)
 
 
-viewPlayer : String -> Int -> Html msg
+viewPlayer : String -> Int -> Html Msg
 viewPlayer name gameNumber =
     let
         playerInfoText =
@@ -104,13 +120,13 @@ viewPlayer name gameNumber =
         h2 [ id "info", class "classy" ] [ playerInfoText ]
 
 
-viewHeader : String -> Html msg
+viewHeader : String -> Html Msg
 viewHeader title =
     header []
         [ h1 [] [ text title ] ]
 
 
-viewFooter : Html msg
+viewFooter : Html Msg
 viewFooter =
     footer []
         [ a [ href "http://elm-lang.org" ]
@@ -143,7 +159,7 @@ sumMarkedPoints entries =
         |> List.sum
 
 
-viewScore : a -> Html msg
+viewScore : a -> Html Msg
 viewScore sum =
     div [ class "score" ]
         [ span [ class "label" ] [ text "Score" ]
@@ -168,7 +184,7 @@ view model =
 main : Program Never Model Msg
 main =
     Html.program
-        { init = ( initialModel, generateRandomNumber )
+        { init = ( initialModel, getEntries )
         , view = view
         , update = update
         , subscriptions = (\_ -> Sub.none)
