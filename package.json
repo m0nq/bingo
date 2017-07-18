@@ -5,9 +5,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "cd server && nodemon server.js"
   },
-  "author": "The Pragmatic Studio",
+  "author": "Cirquitree Development",
   "license": "ISC",
   "dependencies": {
     "json-server": "^0.8.20",
