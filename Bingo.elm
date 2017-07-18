@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck, onClick)
 import Http
+import Json.Decode as Decode exposing (Decoder, field, succeed)
 import Random
 
 
@@ -41,7 +42,7 @@ type Msg
     = NewGame
     | Mark Int
     | NewRandom Int
-    | NewEntries (Result Http.Error String)
+    | NewEntries (Result Http.Error (List Entry))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,12 +66,8 @@ update msg model =
 
         NewEntries result ->
             case result of
-                Ok jsonString ->
-                    let
-                        _ =
-                            Debug.log "It worked!" jsonString
-                    in
-                        ( model, Cmd.none )
+                Ok randomEntries ->
+                    ( { model | entries = randomEntries }, Cmd.none )
 
                 Err error ->
                     let
@@ -78,6 +75,39 @@ update msg model =
                             Debug.log "Oops... I made a doody... :D " error
                     in
                         ( model, Cmd.none )
+
+
+
+-- DECODER
+
+
+entryDecoder : Decoder Entry
+entryDecoder =
+    Decode.map4 Entry
+        idDecoder
+        phraseDecoder
+        pointsDecoder
+        booleanDecoder
+
+
+booleanDecoder : Decoder Bool
+booleanDecoder =
+    (succeed False)
+
+
+pointsDecoder : Decoder Int
+pointsDecoder =
+    (field "points" Decode.int)
+
+
+phraseDecoder : Decoder String
+phraseDecoder =
+    (field "phrase" Decode.string)
+
+
+idDecoder : Decoder Int
+idDecoder =
+    (field "id" Decode.int)
 
 
 
@@ -95,8 +125,8 @@ getEntries =
         entriesUrl =
             "http://localhost:3000/random-entries"
     in
-        entriesUrl
-            |> Http.getString
+        (Decode.list entryDecoder)
+            |> Http.get entriesUrl
             |> Http.send NewEntries
 
 
