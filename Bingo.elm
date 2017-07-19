@@ -15,6 +15,7 @@ type alias Model =
     { entries : List Entry
     , gameNumber : Int
     , name : String
+    , alertMessage : Maybe String
     }
 
 
@@ -28,10 +29,7 @@ type alias Entry =
 
 initialModel : Model
 initialModel =
-    { name = "Monk"
-    , gameNumber = 1
-    , entries = []
-    }
+    Model [] 1 "Monk" Nothing
 
 
 
@@ -43,6 +41,7 @@ type Msg
     | Mark Int
     | NewRandom Int
     | NewEntries (Result Http.Error (List Entry))
+    | CloseAlert
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -67,14 +66,28 @@ update msg model =
         NewEntries result ->
             case result of
                 Ok randomEntries ->
-                    ( { model | entries = randomEntries }, Cmd.none )
+                    { model | entries = randomEntries } ! []
 
                 Err error ->
                     let
-                        _ =
-                            Debug.log "Oops... I made a doody... :D " error
+                        errorMessage =
+                            case error of
+                                Http.NetworkError ->
+                                    "Is the server running...?"
+
+                                Http.BadStatus response ->
+                                    (toString response.status.message)
+
+                                Http.BadPayload message _ ->
+                                    "Decoding Failed: " ++ message
+
+                                _ ->
+                                    (toString error)
                     in
-                        ( model, Cmd.none )
+                        { model | alertMessage = Just errorMessage } ! []
+
+        CloseAlert ->
+            { model | alertMessage = Nothing } ! []
 
 
 
@@ -189,6 +202,19 @@ sumMarkedPoints entries =
         |> List.sum
 
 
+viewAlertMessage : Maybe String -> Html Msg
+viewAlertMessage alertMessage =
+    case alertMessage of
+        Just message ->
+            div [ class "alert" ]
+                [ span [ class "close", onClick CloseAlert ] [ text "X" ]
+                , text message
+                ]
+
+        Nothing ->
+            text ""
+
+
 viewScore : a -> Html Msg
 viewScore sum =
     div [ class "score" ]
@@ -202,6 +228,7 @@ view model =
     div [ class "content" ]
         [ viewHeader "BUZZWORD BINGO"
         , viewPlayer model.name model.gameNumber
+        , viewAlertMessage model.alertMessage
         , viewEntryList model.entries
         , viewScore (sumMarkedPoints model.entries)
         , div [ class "button-group" ]
