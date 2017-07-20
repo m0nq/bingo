@@ -3,8 +3,9 @@ module Bingo exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck, onClick)
-import Http
+import Http exposing (encodeUri)
 import Json.Decode as Decode exposing (Decoder, field, succeed)
+import Json.Encode as Encode
 import Random
 
 
@@ -27,6 +28,13 @@ type alias Entry =
     }
 
 
+type alias Score =
+    { id : Int
+    , name : String
+    , score : Int
+    }
+
+
 initialModel : Model
 initialModel =
     Model [] 1 "Monk" Nothing
@@ -42,6 +50,8 @@ type Msg
     | NewRandom Int
     | NewEntries (Result Http.Error (List Entry))
     | CloseAlert
+    | ShareScore
+    | NewScore (Result Http.Error Score)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -49,6 +59,25 @@ update msg model =
     case msg of
         NewGame ->
             ( { model | gameNumber = model.gameNumber + 1 }, getEntries )
+
+        ShareScore ->
+            ( model, postScore model )
+
+        NewScore result ->
+            case result of
+                Ok score ->
+                    let
+                        message =
+                            "Your score of " ++ (toString score.score) ++ " was successfully shared!"
+                    in
+                        { model | alertMessage = Just message } ! []
+
+                Err error ->
+                    let
+                        message =
+                            "Your score of " ++ (toString error) ++ " was successfully shared!"
+                    in
+                        { model | alertMessage = Just message } ! []
 
         Mark id ->
             let
@@ -123,8 +152,44 @@ idDecoder =
     (field "id" Decode.int)
 
 
+scoreDecoder : Decoder Score
+scoreDecoder =
+    Decode.map3 Score
+        (field "id" Decode.int)
+        (field "name" Decode.string)
+        (field "score" Decode.int)
+
+
+
+-- ENCODERS
+
+
+encodeScore : Model -> Encode.Value
+encodeScore model =
+    Encode.object
+        [ ( "name", Encode.string model.name )
+        , ( "score", Encode.int (sumMarkedPoints model.entries) )
+        ]
+
+
 
 -- COMMANDS
+
+
+postScore : Model -> Cmd Msg
+postScore model =
+    let
+        url =
+            "http://localhost:3000/scores"
+
+        body =
+            encodeScore model
+                |> Http.jsonBody
+
+        request =
+            Http.post url body scoreDecoder
+    in
+        Http.send NewScore request
 
 
 generateRandomNumber : Cmd Msg
@@ -232,7 +297,9 @@ view model =
         , viewEntryList model.entries
         , viewScore (sumMarkedPoints model.entries)
         , div [ class "button-group" ]
-            [ button [ onClick NewGame ] [ text "New Game" ] ]
+            [ button [ onClick NewGame ] [ text "New Game" ]
+            , button [ onClick ShareScore ] [ text "Share Score" ]
+            ]
         , div [ class "debug" ] [ text (toString model) ]
         , viewFooter
         ]
