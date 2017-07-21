@@ -2,7 +2,7 @@ module Bingo exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onCheck, onClick)
+import Html.Events exposing (onClick, onInput)
 import Http exposing (encodeUri)
 import Json.Decode as Decode exposing (Decoder, field, succeed)
 import Json.Encode as Encode
@@ -12,11 +12,18 @@ import Random
 -- MODEL
 
 
+type GameState
+    = EnteringName
+    | Playing
+
+
 type alias Model =
-    { entries : List Entry
+    { name : String
     , gameNumber : Int
-    , name : String
+    , entries : List Entry
     , alertMessage : Maybe String
+    , nameInput : String
+    , gameState : GameState
     }
 
 
@@ -37,7 +44,7 @@ type alias Score =
 
 initialModel : Model
 initialModel =
-    Model [] 1 "Monk" Nothing
+    Model "Anonymous" 1 [] Nothing "" EnteringName
 
 
 
@@ -52,13 +59,38 @@ type Msg
     | CloseAlert
     | ShareScore
     | NewScore (Result Http.Error Score)
+    | SetNameInput String
+    | SaveName
+    | CancelName
+    | ChangeGameState GameState
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NewGame ->
-            ( { model | gameNumber = model.gameNumber + 1 }, getEntries )
+        ChangeGameState state ->
+            { model | gameState = state } ! []
+
+        SaveName ->
+            { model
+                | name = model.nameInput
+                , nameInput = ""
+                , gameState = Playing
+            }
+                ! []
+
+        CancelName ->
+            { model
+                | nameInput = ""
+                , gameState = Playing
+            }
+                ! []
+
+        SetNameInput value ->
+            { model | nameInput = value } ! []
+
+        NewRandom randomNumber ->
+            { model | gameNumber = randomNumber } ! []
 
         ShareScore ->
             ( model, postScore model )
@@ -75,22 +107,12 @@ update msg model =
                 Err error ->
                     let
                         message =
-                            "Your score of " ++ (toString error) ++ " was successfully shared!"
+                            "Error posting your score: " ++ (toString error)
                     in
                         { model | alertMessage = Just message } ! []
 
-        Mark id ->
-            let
-                markEntry e =
-                    if e.id == id then
-                        { e | marked = not e.marked }
-                    else
-                        e
-            in
-                { model | entries = List.map markEntry model.entries } ! []
-
-        NewRandom randomNumber ->
-            { model | gameNumber = randomNumber } ! []
+        NewGame ->
+            ( { model | gameNumber = model.gameNumber + 1 }, getEntries )
 
         NewEntries result ->
             case result of
@@ -118,9 +140,19 @@ update msg model =
         CloseAlert ->
             { model | alertMessage = Nothing } ! []
 
+        Mark id ->
+            let
+                markEntry e =
+                    if e.id == id then
+                        { e | marked = not e.marked }
+                    else
+                        e
+            in
+                { model | entries = List.map markEntry model.entries } ! []
 
 
--- DECODER
+
+-- DECODERS
 
 
 entryDecoder : Decoder Entry
@@ -132,14 +164,9 @@ entryDecoder =
         booleanDecoder
 
 
-booleanDecoder : Decoder Bool
-booleanDecoder =
-    (succeed False)
-
-
-pointsDecoder : Decoder Int
-pointsDecoder =
-    (field "points" Decode.int)
+idDecoder : Decoder Int
+idDecoder =
+    (field "id" Decode.int)
 
 
 phraseDecoder : Decoder String
@@ -147,9 +174,14 @@ phraseDecoder =
     (field "phrase" Decode.string)
 
 
-idDecoder : Decoder Int
-idDecoder =
-    (field "id" Decode.int)
+pointsDecoder : Decoder Int
+pointsDecoder =
+    (field "points" Decode.int)
+
+
+booleanDecoder : Decoder Bool
+booleanDecoder =
+    (succeed False)
 
 
 scoreDecoder : Decoder Score
@@ -176,6 +208,11 @@ encodeScore model =
 -- COMMANDS
 
 
+generateRandomNumber : Cmd Msg
+generateRandomNumber =
+    Random.generate NewRandom (Random.int 1 100)
+
+
 postScore : Model -> Cmd Msg
 postScore model =
     let
@@ -190,11 +227,6 @@ postScore model =
             Http.post url body scoreDecoder
     in
         Http.send NewScore request
-
-
-generateRandomNumber : Cmd Msg
-generateRandomNumber =
-    Random.generate NewRandom (Random.int 1 100)
 
 
 getEntries : Cmd Msg
@@ -212,20 +244,66 @@ getEntries =
 -- VIEW
 
 
-playerInfo : String -> Int -> String
-playerInfo name gameNumber =
-    name ++ " - Game #" ++ (toString gameNumber)
+view : Model -> Html Msg
+view model =
+    div [ class "content" ]
+        [ viewHeader "BUZZWORD BINGO"
+        , viewPlayer model.name model.gameNumber
+        , viewAlertMessage model.alertMessage
+        , viewNameInput model
+        , viewEntryList model.entries
+        , viewScore (sumMarkedPoints model.entries)
+        , div [ class "button-group" ]
+            [ button [ onClick NewGame ] [ text "New Game" ]
+            , button [ onClick ShareScore ] [ text "Share Score" ]
+            ]
+        , div [ class "debug" ] [ text (toString model) ]
+        , viewFooter
+        ]
+
+
+viewNameInput : Model -> Html Msg
+viewNameInput model =
+    case model.gameState of
+        EnteringName ->
+            div [ class "name-input" ]
+                [ input
+                    [ type_ "text"
+                    , placeholder "Who's playing?"
+                    , autofocus True
+                    , value model.nameInput
+                    , onInput SetNameInput
+                    ]
+                    []
+                , button [ onClick SaveName ] [ text "Save" ]
+                , button [ onClick CancelName ] [ text "Cancel" ]
+                ]
+
+        Playing ->
+            text ""
+
+
+viewAlertMessage : Maybe String -> Html Msg
+viewAlertMessage alertMessage =
+    case alertMessage of
+        Just message ->
+            div [ class "alert" ]
+                [ span [ class "close", onClick CloseAlert ]
+                    [ text "X" ]
+                , text message
+                ]
+
+        Nothing ->
+            text ""
 
 
 viewPlayer : String -> Int -> Html Msg
 viewPlayer name gameNumber =
-    let
-        playerInfoText =
-            playerInfo name gameNumber
-                |> String.toUpper
-                |> text
-    in
-        h2 [ id "info", class "classy" ] [ playerInfoText ]
+    h2 [ id "info", class "classy" ]
+        [ a [ href "#", onClick (ChangeGameState EnteringName) ]
+            [ text name ]
+        , text (" - Game #" ++ (toString gameNumber))
+        ]
 
 
 viewHeader : String -> Html Msg
@@ -267,41 +345,11 @@ sumMarkedPoints entries =
         |> List.sum
 
 
-viewAlertMessage : Maybe String -> Html Msg
-viewAlertMessage alertMessage =
-    case alertMessage of
-        Just message ->
-            div [ class "alert" ]
-                [ span [ class "close", onClick CloseAlert ] [ text "X" ]
-                , text message
-                ]
-
-        Nothing ->
-            text ""
-
-
 viewScore : a -> Html Msg
 viewScore sum =
     div [ class "score" ]
         [ span [ class "label" ] [ text "Score" ]
         , span [ class "value" ] [ text (toString sum) ]
-        ]
-
-
-view : Model -> Html Msg
-view model =
-    div [ class "content" ]
-        [ viewHeader "BUZZWORD BINGO"
-        , viewPlayer model.name model.gameNumber
-        , viewAlertMessage model.alertMessage
-        , viewEntryList model.entries
-        , viewScore (sumMarkedPoints model.entries)
-        , div [ class "button-group" ]
-            [ button [ onClick NewGame ] [ text "New Game" ]
-            , button [ onClick ShareScore ] [ text "Share Score" ]
-            ]
-        , div [ class "debug" ] [ text (toString model) ]
-        , viewFooter
         ]
 
 
