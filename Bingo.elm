@@ -223,7 +223,6 @@ view model =
             [ primaryButton NewGame "New Game"
             , primaryButton ShareScore "Share Score"
             ]
-        , div [ class "debug" ] [ text (toString model) ]
         , viewFooter
         ]
 

@@ -1,3 +1,3 @@
-# Bingo
+# [Bingo](https://elm-bingo.herokuapp.com)
 
-Elm project Bingo game. Have fun! :)
+A Bingo game powered by [Elm](http://elm-lang.org). Have fun! :)

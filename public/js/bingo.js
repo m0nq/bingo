@@ -10018,24 +10018,8 @@ var _user$project$Bingo$view = function (model) {
 										}),
 									_1: {
 										ctor: '::',
-										_0: A2(
-											_elm_lang$html$Html$div,
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$class('debug'),
-												_1: {ctor: '[]'}
-											},
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html$text(
-													_elm_lang$core$Basics$toString(model)),
-												_1: {ctor: '[]'}
-											}),
-										_1: {
-											ctor: '::',
-											_0: _user$project$Bingo$viewFooter,
-											_1: {ctor: '[]'}
-										}
+										_0: _user$project$Bingo$viewFooter,
+										_1: {ctor: '[]'}
 									}
 								}
 							}
