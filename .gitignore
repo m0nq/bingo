@@ -1,4 +1,7 @@
-elm-stuff/
-elm.js
 node_modules/
-Bingo.elm
+public/components
+.nyc_output
+.sass-cache
+elm-stuff/
+*.elm
+elm-package.json
