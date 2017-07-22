@@ -19,6 +19,10 @@ router.get('/random-entries', function (req, res) {
   res.json(_.sample(entries, 5));
 });
 
+router.get('/entries', function (req, res) {
+  res.json(db.entries);
+});
+
 router.get('/unauthorized', function(req, res) {
   res.sendStatus(401);
 })

@@ -181,11 +181,15 @@ generateRandomNumber =
     Random.generate NewRandom (Random.int 1 100)
 
 
+
+-- TODO: determine how to call the db internally
+
+
 postScore : Model -> Cmd Msg
 postScore model =
     let
         url =
-            "http://localhost:3000/scores"
+            "https://elm-bingo.herokuapp.com/scores"
 
         body =
             encodeScore model
@@ -201,7 +205,7 @@ getEntries : Cmd Msg
 getEntries =
     let
         entriesUrl =
-            "http://localhost:3000/random-entries"
+            "https://elm-bingo.herokuapp.com/random-entries"
     in
         Entry.getEntries NewEntries entriesUrl
 

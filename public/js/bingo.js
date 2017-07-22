@@ -9832,7 +9832,7 @@ var _user$project$Bingo$NewScore = function (a) {
 var _user$project$Bingo$postScore = function (model) {
 	var body = _elm_lang$http$Http$jsonBody(
 		_user$project$Bingo$encodeScore(model));
-	var url = 'http://localhost:3000/scores';
+	var url = 'https://elm-bingo.herokuapp.com/scores';
 	var request = A3(_elm_lang$http$Http$post, url, body, _user$project$Bingo$scoreDecoder);
 	return A2(_elm_lang$http$Http$send, _user$project$Bingo$NewScore, request);
 };
@@ -9842,7 +9842,7 @@ var _user$project$Bingo$NewEntries = function (a) {
 	return {ctor: 'NewEntries', _0: a};
 };
 var _user$project$Bingo$getEntries = function () {
-	var entriesUrl = 'http://localhost:3000/random-entries';
+	var entriesUrl = 'https://elm-bingo.herokuapp.com/random-entries';
 	return A2(_user$project$Entry$getEntries, _user$project$Bingo$NewEntries, entriesUrl);
 }();
 var _user$project$Bingo$update = F2(
