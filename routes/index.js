@@ -19,8 +19,11 @@ router.get('/random-entries', function (req, res) {
   res.json(_.sample(entries, 5));
 });
 
-router.get('/entries', function (req, res) {
-  res.json(db.entries);
+router.get('/scores', function (req, res) {
+  var score = _.filter(db.scores, function (memo, entry) {
+    return memo + entry.points;
+  });
+  res.json(score);
 });
 
 router.get('/unauthorized', function(req, res) {

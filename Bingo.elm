@@ -51,7 +51,6 @@ type Msg
     | NewRandom Int
     | NewEntries (Result Http.Error (List Entry.Entry))
     | CloseAlert
-    | ShareScore
     | NewScore (Result Http.Error Score)
     | SetNameInput String
     | SaveName
@@ -80,9 +79,6 @@ update msg model =
 
         NewRandom randomNumber ->
             { model | gameNumber = randomNumber } ! []
-
-        ShareScore ->
-            ( model, postScore model )
 
         NewScore result ->
             case result of
@@ -181,26 +177,6 @@ generateRandomNumber =
     Random.generate NewRandom (Random.int 1 100)
 
 
-
--- TODO: determine how to call the db internally
-
-
-postScore : Model -> Cmd Msg
-postScore model =
-    let
-        url =
-            "https://elm-bingo.herokuapp.com/scores"
-
-        body =
-            encodeScore model
-                |> Http.jsonBody
-
-        request =
-            Http.post url body scoreDecoder
-    in
-        Http.send NewScore request
-
-
 getEntries : Cmd Msg
 getEntries =
     let
@@ -224,9 +200,7 @@ view model =
         , Entry.viewEntryList Mark model.entries
         , viewScore (Entry.sumMarkedPoints model.entries)
         , div [ class "button-group" ]
-            [ primaryButton NewGame "New Game"
-            , primaryButton ShareScore "Share Score"
-            ]
+            [ primaryButton NewGame "New Game" ]
         , viewFooter
         ]
 
