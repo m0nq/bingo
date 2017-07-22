@@ -35,8 +35,8 @@ server.use(middlewares);
 var router = jsonServer.router('db.json');
 server.use(router);
 
-server.listen(3000, function() {
+server.listen(server.port, function() {
   console.log();
-  console.log('  🚀  Serving db.json on http://localhost:3000');
+  console.log('  🚀  Listening on the quiet storm...*');
   console.log();
 });
