@@ -35,8 +35,8 @@ server.use(middlewares);
 var router = jsonServer.router('db.json');
 server.use(router);
 
-server.listen(server.port, function() {
+server.listen(process.env.PORT, function() {
   console.log();
-  console.log('  🚀  Listening on the quiet storm...*');
+  console.log('  🚀  Listening on the quiet storm...*:', process.env.PORT);
   console.log();
 });
