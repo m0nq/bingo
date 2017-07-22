@@ -1,5 +1,6 @@
 module Bingo exposing (..)
 
+import Entry
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
@@ -21,18 +22,10 @@ type GameState
 type alias Model =
     { name : String
     , gameNumber : Int
-    , entries : List Entry
+    , entries : List Entry.Entry
     , alertMessage : Maybe String
     , nameInput : String
     , gameState : GameState
-    }
-
-
-type alias Entry =
-    { id : Int
-    , phrase : String
-    , points : Int
-    , marked : Bool
     }
 
 
@@ -56,7 +49,7 @@ type Msg
     = NewGame
     | Mark Int
     | NewRandom Int
-    | NewEntries (Result Http.Error (List Entry))
+    | NewEntries (Result Http.Error (List Entry.Entry))
     | CloseAlert
     | ShareScore
     | NewScore (Result Http.Error Score)
@@ -73,12 +66,7 @@ update msg model =
             { model | gameState = state } ! []
 
         SaveName ->
-            { model
-                | name = model.nameInput
-                , nameInput = ""
-                , gameState = Playing
-            }
-                ! []
+            hasName model
 
         CancelName ->
             { model
@@ -123,14 +111,25 @@ update msg model =
             { model | alertMessage = Nothing } ! []
 
         Mark id ->
-            let
-                markEntry e =
-                    if e.id == id then
-                        { e | marked = not e.marked }
-                    else
-                        e
-            in
-                { model | entries = List.map markEntry model.entries } ! []
+            { model | entries = Entry.markEntryWithId model.entries id } ! []
+
+
+hasName : Model -> ( Model, Cmd msg )
+hasName model =
+    if model.nameInput == "" then
+        { model
+            | name = "Anonymous"
+            , nameInput = ""
+            , gameState = Playing
+        }
+            ! []
+    else
+        { model
+            | name = model.nameInput
+            , nameInput = ""
+            , gameState = Playing
+        }
+            ! []
 
 
 httpErrorToString : Http.Error -> String
@@ -153,35 +152,6 @@ httpErrorToString error =
 -- DECODERS
 
 
-entryDecoder : Decoder Entry
-entryDecoder =
-    Decode.map4 Entry
-        idDecoder
-        phraseDecoder
-        pointsDecoder
-        booleanDecoder
-
-
-idDecoder : Decoder Int
-idDecoder =
-    (field "id" Decode.int)
-
-
-phraseDecoder : Decoder String
-phraseDecoder =
-    (field "phrase" Decode.string)
-
-
-pointsDecoder : Decoder Int
-pointsDecoder =
-    (field "points" Decode.int)
-
-
-booleanDecoder : Decoder Bool
-booleanDecoder =
-    (succeed False)
-
-
 scoreDecoder : Decoder Score
 scoreDecoder =
     Decode.map3 Score
@@ -198,7 +168,7 @@ encodeScore : Model -> Encode.Value
 encodeScore model =
     Encode.object
         [ ( "name", Encode.string model.name )
-        , ( "score", Encode.int (sumMarkedPoints model.entries) )
+        , ( "score", Encode.int (Entry.sumMarkedPoints model.entries) )
         ]
 
 
@@ -233,9 +203,7 @@ getEntries =
         entriesUrl =
             "http://localhost:3000/random-entries"
     in
-        (Decode.list entryDecoder)
-            |> Http.get entriesUrl
-            |> Http.send NewEntries
+        Entry.getEntries NewEntries entriesUrl
 
 
 
@@ -249,8 +217,8 @@ view model =
         , viewPlayer model.name model.gameNumber
         , alertMessage CloseAlert model.alertMessage
         , viewNameInput model
-        , viewEntryList model.entries
-        , viewScore (sumMarkedPoints model.entries)
+        , Entry.viewEntryList Mark model.entries
+        , viewScore (Entry.sumMarkedPoints model.entries)
         , div [ class "button-group" ]
             [ primaryButton NewGame "New Game"
             , primaryButton ShareScore "Share Score"
@@ -302,31 +270,6 @@ viewFooter =
         [ a [ href "http://elm-lang.org" ]
             [ text "Powered by Elm" ]
         ]
-
-
-viewEntryItem : Entry -> Html Msg
-viewEntryItem entry =
-    li [ classList [ ( "marked", entry.marked ) ], onClick (Mark entry.id) ]
-        [ span [ class "phrase" ] [ text entry.phrase ]
-        , span [ class "points" ] [ text (toString entry.points) ]
-        ]
-
-
-viewEntryList : List Entry -> Html Msg
-viewEntryList entries =
-    let
-        listOfEntries =
-            List.map viewEntryItem entries
-    in
-        ul [] listOfEntries
-
-
-sumMarkedPoints : List Entry -> Int
-sumMarkedPoints entries =
-    entries
-        |> List.filter .marked
-        |> List.map .points
-        |> List.sum
 
 
 viewScore : a -> Html Msg
