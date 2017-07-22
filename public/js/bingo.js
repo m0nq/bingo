@@ -9829,14 +9829,6 @@ var _user$project$Bingo$viewNameInput = function (model) {
 var _user$project$Bingo$NewScore = function (a) {
 	return {ctor: 'NewScore', _0: a};
 };
-var _user$project$Bingo$postScore = function (model) {
-	var body = _elm_lang$http$Http$jsonBody(
-		_user$project$Bingo$encodeScore(model));
-	var url = 'https://elm-bingo.herokuapp.com/scores';
-	var request = A3(_elm_lang$http$Http$post, url, body, _user$project$Bingo$scoreDecoder);
-	return A2(_elm_lang$http$Http$send, _user$project$Bingo$NewScore, request);
-};
-var _user$project$Bingo$ShareScore = {ctor: 'ShareScore'};
 var _user$project$Bingo$CloseAlert = {ctor: 'CloseAlert'};
 var _user$project$Bingo$NewEntries = function (a) {
 	return {ctor: 'NewEntries', _0: a};
@@ -9879,12 +9871,6 @@ var _user$project$Bingo$update = F2(
 						model,
 						{gameNumber: _p2._0}),
 					{ctor: '[]'});
-			case 'ShareScore':
-				return {
-					ctor: '_Tuple2',
-					_0: model,
-					_1: _user$project$Bingo$postScore(model)
-				};
 			case 'NewScore':
 				var _p3 = _p2._0;
 				if (_p3.ctor === 'Ok') {
@@ -10010,11 +9996,7 @@ var _user$project$Bingo$view = function (model) {
 										{
 											ctor: '::',
 											_0: A2(_user$project$ViewHelpers$primaryButton, _user$project$Bingo$NewGame, 'New Game'),
-											_1: {
-												ctor: '::',
-												_0: A2(_user$project$ViewHelpers$primaryButton, _user$project$Bingo$ShareScore, 'Share Score'),
-												_1: {ctor: '[]'}
-											}
+											_1: {ctor: '[]'}
 										}),
 									_1: {
 										ctor: '::',
